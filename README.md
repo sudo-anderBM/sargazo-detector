@@ -1,7 +1,7 @@
 # Sargazo Detector
 
 Detección de sargazo en costas yucatecas con imágenes del satélite Sentinel-2.  
-Proyecto final de Programación — Ingeniería en Computación, UADY 2026.
+ — Ingeniería en Computación, UADY 2026.
 
 
 ---
