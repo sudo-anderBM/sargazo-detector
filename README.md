@@ -44,10 +44,10 @@ El punto de comparación más cercano que encontramos es el reporte de la Red de
 
 Hay tres cosas que limitan esta comparación y que vale la pena mencionar sin esconderlas:
 
-Cuatro días de diferencia. El reporte es del 7 de mayo, la imagen del 11. El sargazo puede recorrer bastante distancia en ese tiempo.
-Unidades distintas. Nosotros medimos km² en el mar. Los reportes cuentan playas, no superficie. No son equivalentes directos.
-13% de nubes. Los píxeles bajo nubes son ciegos para el satélite. El área real detectada probablemente es mayor.
-El siguiente paso lógico sería contactar a la UNAM UMDI Sisal — están en Yucatán y tienen datos de campo reales con coordenadas. Con eso sí podríamos calcular métricas de precisión formales.
+Cuatro días de diferencia, el reporte es del 7 de mayo, la imagen del 11. El sargazo puede recorrer bastante distancia en ese tiempo.
+Unidades distintas. Nosotros medimos km² en el mar, los reportes cuentan playas, no superficie, no son equivalentes directos.
+13% de nubes los píxeles bajo nubes son ciegos para el satélite, el área real detectada probablemente es mayor.
+->El siguiente paso lógico sería contactar a la UNAM UMDI Sisal — están en Yucatán y tienen datos de campo reales con coordenadas. Con eso sí podríamos calcular métricas de precisión formales
 
 ## Stack
 
