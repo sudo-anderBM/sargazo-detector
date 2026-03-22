@@ -22,6 +22,17 @@ conda activate sargazo
 python test_afai.py
 ```
 
+Algoritmo
+```
+AFAI = B8A − [B04 + (B11 − B04) × (865−665)/(1610−665)]
+```
+
+- **B04** — Banda roja (665 nm)
+- **B8A** — Infrarrojo cercano (865 nm)  
+- **B11** — Infrarrojo de onda corta (1610 nm)
+
+Referencia: Wang & Hu, 2009 — *Remote Sensing of Environment*
+
 ## Stack
 
 `rasterio` · `numpy` · `scikit-image` · `matplotlib` · `folium`
