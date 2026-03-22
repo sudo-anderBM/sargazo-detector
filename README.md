@@ -2,8 +2,8 @@
 
 Detección de sargazo en costas yucatecas con imágenes del satélite Sentinel-2.  
  — Ingeniería en Computación, UADY 2026.
-
-
+ 
+La CONABIO-SIMAR — la institución que monitorea el sargazo en México — también usa el índice AFAI. La diferencia es que ellos trabajan con MODIS a 1 km de resolución. Nosotros usamos Sentinel-2 a 20 m. Cincuenta veces más detalle, con datos igualmente gratuitos.
 ---
 
 El proyecto implementa el índice AFAI sobre imágenes reales de la ESA para
