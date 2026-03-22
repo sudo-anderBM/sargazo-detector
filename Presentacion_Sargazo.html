@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Detección de Sargazo — UADY 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0d2137;
+    --blue: #1a5f8a;
+    --teal: #0f8a6e;
+    --sand: #f5f0e8;
+    --warm: #e8dcc8;
+    --accent: #2ab8a0;
+    --coral: #e05a2b;
+    --text: #1a1a2e;
+    --muted: #6b7a8d;
+    --white: #ffffff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--navy);
+    color: var(--white);
+    height: 100vh;
+    overflow: hidden;
+    cursor: none;
+  }
+
+  .cursor {
+    position: fixed;
+    width: 10px; height: 10px;
+    background: var(--accent);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    transition: transform 0.1s;
+    mix-blend-mode: difference;
+  }
+
+  /* SLIDES */
+  .deck { width: 100vw; height: 100vh; position: relative; }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 80px;
+    opacity: 0;
+    transform: translateX(60px);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+  }
+
+  .slide.active {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: all;
+  }
+
+  .slide.exit {
+    opacity: 0;
+    transform: translateX(-60px);
+  }
+
+  /* SLIDE 1 — PORTADA */
+  .slide-1 {
+    background: var(--navy);
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  .slide-1::before {
+    content: '';
+    position: absolute;
+    right: 0; top: 0;
+    width: 45%;
+    height: 100%;
+    background: linear-gradient(135deg, #0f3a5c 0%, #0d5c4a 100%);
+    clip-path: polygon(15% 0, 100% 0, 100% 100%, 0% 100%);
+  }
+
+  .slide-1::after {
+    content: '';
+    position: absolute;
+    right: 80px; top: 50%;
+    transform: translateY(-50%);
+    width: 320px; height: 320px;
+    background: radial-gradient(circle at 60% 40%, rgba(42,184,160,0.3) 0%, transparent 70%);
+    border-radius: 50%;
+    border: 1px solid rgba(42,184,160,0.2);
+  }
+
+  .wave-pattern {
+    position: absolute;
+    right: 40px; top: 50%;
+    transform: translateY(-50%);
+    width: 380px; height: 380px;
+    opacity: 0.15;
+    z-index: 1;
+  }
+
+  .portada-content {
+    position: relative;
+    z-index: 2;
+    max-width: 55%;
+  }
+
+  .tag {
+    display: inline-block;
+    background: rgba(42,184,160,0.15);
+    border: 1px solid rgba(42,184,160,0.4);
+    color: var(--accent);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+
+  .portada-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 58px;
+    line-height: 1.08;
+    color: var(--white);
+    margin-bottom: 20px;
+  }
+
+  .portada-title em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .portada-sub {
+    font-size: 16px;
+    color: rgba(255,255,255,0.55);
+    font-weight: 300;
+    line-height: 1.7;
+    margin-bottom: 40px;
+    max-width: 480px;
+  }
+
+  .portada-meta {
+    display: flex;
+    gap: 32px;
+  }
+
+  .meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .meta-label {
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .meta-value {
+    font-size: 14px;
+    color: rgba(255,255,255,0.8);
+    font-weight: 500;
+  }
+
+  /* SLIDE 2 — PROBLEMA */
+  .slide-2 {
+    background: var(--sand);
+    color: var(--text);
+    align-items: flex-start;
+  }
+
+  .slide-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--muted);
+    margin-bottom: 16px;
+    font-weight: 500;
+  }
+
+  .slide-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 42px;
+    line-height: 1.15;
+    margin-bottom: 40px;
+    color: var(--navy);
+  }
+
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    width: 100%;
+  }
+
+  .impact-card {
+    background: var(--white);
+    border-radius: 12px;
+    padding: 28px 24px;
+    border-top: 3px solid var(--coral);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .impact-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; right: 0;
+    width: 60px; height: 60px;
+    background: rgba(224,90,43,0.05);
+    border-radius: 60px 0 0 0;
+  }
+
+  .impact-icon {
+    font-size: 28px;
+    margin-bottom: 14px;
+    display: block;
+  }
+
+  .impact-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--navy);
+    margin-bottom: 8px;
+  }
+
+  .impact-desc {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .stat-bar {
+    width: 100%;
+    margin-top: 32px;
+    background: var(--white);
+    border-radius: 12px;
+    padding: 20px 28px;
+    display: flex;
+    align-items: center;
+    gap: 40px;
+  }
+
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .stat-num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 32px;
+    color: var(--teal);
+  }
+
+  .stat-desc {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .stat-divider {
+    width: 1px;
+    height: 48px;
+    background: var(--warm);
+  }
+
+  /* SLIDE 3 — SENTINEL */
+  .slide-3 {
+    background: #0a1628;
+    align-items: flex-start;
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    width: 100%;
+    align-items: start;
+  }
+
+  .satellite-visual {
+    background: linear-gradient(135deg, #0f2a45 0%, #0a3d2e 100%);
+    border-radius: 16px;
+    padding: 32px;
+    height: 340px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .orbit-ring {
+    position: absolute;
+    top: 20px; right: -60px;
+    width: 220px; height: 220px;
+    border: 1px dashed rgba(42,184,160,0.3);
+    border-radius: 50%;
+    animation: orbit 20s linear infinite;
+  }
+
+  .orbit-ring::after {
+    content: '🛰';
+    position: absolute;
+    top: -10px; left: 50%;
+    font-size: 18px;
+    transform: translateX(-50%);
+  }
+
+  @keyframes orbit {
+    to { transform: rotate(360deg); }
+  }
+
+  .sat-stat {
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    padding: 10px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+  }
+
+  .sat-key { color: rgba(255,255,255,0.5); }
+  .sat-val { color: var(--accent); font-weight: 500; font-family: 'DM Mono', monospace; }
+
+  .bands-list {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .band-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .band-chip {
+    background: rgba(42,184,160,0.15);
+    border: 1px solid rgba(42,184,160,0.3);
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    min-width: 50px;
+    text-align: center;
+  }
+
+  .band-info { font-size: 13px; color: rgba(255,255,255,0.7); }
+  .band-nm { font-size: 11px; color: rgba(255,255,255,0.35); margin-left: auto; font-family: 'DM Mono', monospace; }
+
+  /* SLIDE 4 — AFAI */
+  .slide-4 {
+    background: var(--white);
+    color: var(--text);
+    align-items: flex-start;
+  }
+
+  .formula-card {
+    background: var(--navy);
+    border-radius: 16px;
+    padding: 32px 40px;
+    width: 100%;
+    margin: 24px 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .formula-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--teal));
+  }
+
+  .formula-tag {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 16px;
+    font-weight: 500;
+  }
+
+  .formula-main {
+    font-family: 'DM Mono', monospace;
+    font-size: 22px;
+    color: var(--white);
+    margin-bottom: 8px;
+  }
+
+  .formula-expand {
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 16px;
+  }
+
+  .formula-ref {
+    font-size: 11px;
+    color: rgba(255,255,255,0.3);
+    font-style: italic;
+  }
+
+  .steps-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    width: 100%;
+  }
+
+  .step-card {
+    background: var(--sand);
+    border-radius: 12px;
+    padding: 20px;
+    border-left: 3px solid var(--teal);
+  }
+
+  .step-num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 36px;
+    color: rgba(15,138,110,0.2);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .step-title { font-weight: 600; font-size: 13px; color: var(--navy); margin-bottom: 6px; }
+  .step-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+  /* SLIDE 5 — OTSU */
+  .slide-5 {
+    background: #0d2137;
+    align-items: flex-start;
+  }
+
+  .otsu-visual {
+    width: 100%;
+    margin-top: 8px;
+    position: relative;
+  }
+
+  .histogram-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 120px;
+    padding: 0 10px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.06);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .bar {
+    flex: 1;
+    border-radius: 2px 2px 0 0;
+    transition: height 0.3s;
+  }
+
+  .bar.water { background: rgba(42,184,160,0.6); }
+  .bar.sarg { background: rgba(224,90,43,0.7); }
+  .bar.mid { background: rgba(255,255,255,0.2); }
+
+  .threshold-line {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 2px;
+    background: #f0c040;
+    left: 62%;
+  }
+
+  .threshold-line::after {
+    content: 'Umbral Otsu';
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    font-size: 10px;
+    color: #f0c040;
+    white-space: nowrap;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .histo-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .comparison-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    width: 100%;
+    margin-top: 24px;
+  }
+
+  .comp-card {
+    border-radius: 12px;
+    padding: 20px 24px;
+  }
+
+  .comp-card.bad {
+    background: rgba(224,90,43,0.08);
+    border: 1px solid rgba(224,90,43,0.2);
+  }
+
+  .comp-card.good {
+    background: rgba(42,184,160,0.08);
+    border: 1px solid rgba(42,184,160,0.2);
+  }
+
+  .comp-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+
+  .comp-card.bad .comp-label { color: var(--coral); }
+  .comp-card.good .comp-label { color: var(--accent); }
+
+  .comp-text { font-size: 13px; color: rgba(255,255,255,0.7); line-height: 1.6; }
+  .mono { font-family: 'DM Mono', monospace; font-size: 12px; }
+
+  /* SLIDE 6 — RESULTADOS */
+  .slide-6 {
+    background: var(--sand);
+    color: var(--text);
+    align-items: flex-start;
+  }
+
+  .result-hero {
+    background: var(--navy);
+    border-radius: 16px;
+    padding: 32px 40px;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 32px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .result-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.02'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+
+  .res-metric {
+    position: relative;
+    z-index: 1;
+  }
+
+  .res-num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 48px;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .res-unit {
+    font-size: 18px;
+    color: rgba(255,255,255,0.5);
+  }
+
+  .res-label {
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .res-divider {
+    width: 1px;
+    background: rgba(255,255,255,0.08);
+    align-self: stretch;
+  }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    width: 100%;
+  }
+
+  .detail-card {
+    background: var(--white);
+    border-radius: 10px;
+    padding: 16px 18px;
+    border-bottom: 2px solid var(--teal);
+  }
+
+  .detail-key { font-size: 11px; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .detail-val { font-size: 14px; font-weight: 600; color: var(--navy); font-family: 'DM Mono', monospace; }
+
+  /* SLIDE 7 — CÓDIGO */
+  .slide-7 {
+    background: #0a1628;
+    align-items: flex-start;
+  }
+
+  .code-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 0;
+  }
+
+  .tab-btn {
+    background: rgba(255,255,255,0.05);
+    border: none;
+    color: rgba(255,255,255,0.4);
+    padding: 8px 20px;
+    border-radius: 8px 8px 0 0;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .tab-btn.active {
+    background: rgba(255,255,255,0.08);
+    color: var(--accent);
+    border-bottom: 2px solid var(--accent);
+  }
+
+  .code-block {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 0 12px 12px 12px;
+    padding: 28px 32px;
+    width: 100%;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    overflow: hidden;
+  }
+
+  .code-panel { display: none; }
+  .code-panel.active { display: block; }
+
+  .kw { color: #c792ea; }
+  .fn { color: #82aaff; }
+  .str { color: #c3e88d; }
+  .cm { color: #546e7a; font-style: italic; }
+  .num { color: #f78c6c; }
+  .var { color: #eeffff; }
+
+  .arch-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    width: 100%;
+    margin-top: 16px;
+  }
+
+  .arch-file {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px;
+    padding: 16px 18px;
+    border-left: 3px solid var(--accent);
+  }
+
+  .arch-name { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--accent); margin-bottom: 6px; }
+  .arch-desc { font-size: 12px; color: rgba(255,255,255,0.5); line-height: 1.5; }
+
+  /* SLIDE 8 — FLUJO */
+  .slide-8 {
+    background: var(--white);
+    color: var(--text);
+    align-items: center;
+  }
+
+  .flow-steps {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    width: 100%;
+    margin-top: 32px;
+    overflow: visible;
+  }
+
+  .flow-step {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    position: relative;
+  }
+
+  .flow-step:not(:last-child)::after {
+    content: '→';
+    position: absolute;
+    right: -14px;
+    top: 28px;
+    font-size: 20px;
+    color: var(--teal);
+    font-weight: 300;
+    z-index: 2;
+  }
+
+  .flow-icon {
+    width: 56px; height: 56px;
+    background: var(--navy);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    margin-bottom: 12px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .flow-step-title { font-weight: 600; font-size: 13px; color: var(--navy); margin-bottom: 4px; }
+  .flow-step-sub { font-size: 11px; color: var(--muted); line-height: 1.4; }
+
+  .validation-box {
+    background: var(--sand);
+    border-radius: 16px;
+    padding: 24px 32px;
+    width: 100%;
+    margin-top: 28px;
+    display: flex;
+    gap: 32px;
+    align-items: center;
+    border-left: 4px solid var(--teal);
+  }
+
+  .val-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--teal); font-weight: 600; margin-bottom: 8px; }
+  .val-text { font-size: 14px; color: var(--navy); line-height: 1.6; }
+
+  /* SLIDE 9 — CONCLUSIÓN */
+  .slide-9 {
+    background: var(--navy);
+    align-items: flex-start;
+  }
+
+  .concl-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  .concl-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 14px;
+    padding: 24px 26px;
+  }
+
+  .concl-icon { font-size: 24px; margin-bottom: 12px; display: block; }
+  .concl-title { font-weight: 600; font-size: 15px; margin-bottom: 8px; }
+  .concl-text { font-size: 13px; color: rgba(255,255,255,0.6); line-height: 1.7; }
+
+  .next-steps {
+    background: linear-gradient(135deg, rgba(42,184,160,0.1), rgba(15,138,110,0.1));
+    border: 1px solid rgba(42,184,160,0.2);
+    border-radius: 14px;
+    padding: 24px 26px;
+    width: 100%;
+    margin-top: 20px;
+  }
+
+  .next-title { font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--accent); margin-bottom: 14px; font-weight: 600; }
+
+  .next-items {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .next-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.7);
+  }
+
+  .next-dot {
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* CONTROLES */
+  .controls {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    z-index: 100;
+  }
+
+  .btn {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.7);
+    padding: 10px 24px;
+    border-radius: 24px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor: none;
+    transition: all 0.2s;
+    backdrop-filter: blur(10px);
+  }
+
+  .btn:hover {
+    background: rgba(255,255,255,0.14);
+    color: var(--white);
+  }
+
+  .btn:disabled {
+    opacity: 0.3;
+    cursor: none;
+  }
+
+  .slide-counter {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: rgba(255,255,255,0.4);
+    min-width: 60px;
+    text-align: center;
+  }
+
+  .progress-dots {
+    display: flex;
+    gap: 6px;
+  }
+
+  .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    transition: all 0.3s;
+    cursor: none;
+  }
+
+  .dot.active {
+    background: var(--accent);
+    width: 20px;
+    border-radius: 3px;
+  }
+
+  /* SLIDE NUMBER */
+  .slide-num {
+    position: fixed;
+    top: 28px;
+    right: 40px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: rgba(255,255,255,0.25);
+    z-index: 100;
+    letter-spacing: 1px;
+  }
+
+  /* LOGO */
+  .logo-mark {
+    position: fixed;
+    top: 28px;
+    left: 40px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.3);
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 1px;
+    z-index: 100;
+  }
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="logo-mark">UADY · FC · 2026</div>
+<div class="slide-num" id="slideNum">01 / 09</div>
+
+<div class="deck" id="deck">
+
+  <!-- SLIDE 1 — PORTADA -->
+  <div class="slide slide-1 active">
+    <svg class="wave-pattern" viewBox="0 0 400 400" fill="none">
+      <circle cx="200" cy="200" r="160" stroke="rgba(42,184,160,0.4)" stroke-width="1"/>
+      <circle cx="200" cy="200" r="120" stroke="rgba(42,184,160,0.3)" stroke-width="1"/>
+      <circle cx="200" cy="200" r="80" stroke="rgba(42,184,160,0.2)" stroke-width="1"/>
+      <circle cx="200" cy="200" r="40" fill="rgba(42,184,160,0.1)" stroke="rgba(42,184,160,0.4)" stroke-width="1"/>
+      <line x1="40" y1="200" x2="360" y2="200" stroke="rgba(42,184,160,0.15)" stroke-width="1"/>
+      <line x1="200" y1="40" x2="200" y2="360" stroke="rgba(42,184,160,0.15)" stroke-width="1"/>
+      <line x1="87" y1="87" x2="313" y2="313" stroke="rgba(42,184,160,0.1)" stroke-width="1"/>
+      <line x1="313" y1="87" x2="87" y2="313" stroke="rgba(42,184,160,0.1)" stroke-width="1"/>
+    </svg>
+    <div class="portada-content">
+      <div class="tag">Proyecto Final · Programación I</div>
+      <h1 class="portada-title">Detección de<br><em>Sargazo</em><br>desde Satélite</h1>
+      <p class="portada-sub">Implementación del índice AFAI sobre imágenes Sentinel-2 para detectar sargazo en las costas de Yucatán y Quintana Roo.</p>
+      <div class="portada-meta">
+        <div class="meta-item">
+          <span class="meta-label">Alumno</span>
+          <span class="meta-value">Alexander Gallegos</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Facultad</span>
+          <span class="meta-value">Matemáticas — UADY</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Semestre</span>
+          <span class="meta-value">2° · Marzo 2026</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 2 — PROBLEMA -->
+  <div class="slide slide-2">
+    <div class="slide-label">01 — Motivación</div>
+    <h2 class="slide-title">¿Por qué detectar sargazo<br>desde el espacio?</h2>
+    <div class="cards-grid">
+      <div class="impact-card">
+        <span class="impact-icon">🏖</span>
+        <div class="impact-title">Turismo</div>
+        <div class="impact-desc">Pérdidas millonarias en hotelería y servicios costeros de Quintana Roo</div>
+      </div>
+      <div class="impact-card">
+        <span class="impact-icon">🐠</span>
+        <div class="impact-title">Ecosistema</div>
+        <div class="impact-desc">Muerte de arrecifes de coral por anoxia al descomponerse en el fondo</div>
+      </div>
+      <div class="impact-card">
+        <span class="impact-icon">⚠️</span>
+        <div class="impact-title">Salud</div>
+        <div class="impact-desc">Emisión de H₂S al descomponerse en playa — gas tóxico con olor a huevo</div>
+      </div>
+      <div class="impact-card">
+        <span class="impact-icon">🚢</span>
+        <div class="impact-title">Infraestructura</div>
+        <div class="impact-desc">Obstrucción de tomas de agua, puertos y equipos de acuicultura</div>
+      </div>
+    </div>
+    <div class="stat-bar">
+      <div class="stat-item">
+        <span class="stat-num">2011</span>
+        <span class="stat-desc">Primer arribo masivo documentado</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-num">738</span>
+        <span class="stat-desc">km² detectados en May 2022</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-num">5 días</span>
+        <span class="stat-desc">Anticipación posible con satélite</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-num">€0</span>
+        <span class="stat-desc">Costo de los datos — Copernicus</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3 — SENTINEL -->
+  <div class="slide slide-3">
+    <div class="slide-label" style="color:rgba(255,255,255,0.4)">02 — Fuente de Datos</div>
+    <h2 class="slide-title" style="color:var(--white);margin-bottom:28px">Sentinel-2 — ESA</h2>
+    <div class="two-col">
+      <div class="satellite-visual">
+        <div class="orbit-ring"></div>
+        <div class="sat-stat"><span class="sat-key">Resolución</span><span class="sat-val">20 m/píxel</span></div>
+        <div class="sat-stat"><span class="sat-key">Revisita</span><span class="sat-val">5 días</span></div>
+        <div class="sat-stat"><span class="sat-key">Bandas</span><span class="sat-val">13 espectrales</span></div>
+        <div class="sat-stat"><span class="sat-key">Acceso</span><span class="sat-val">Gratuito</span></div>
+        <div class="sat-stat"><span class="sat-key">Nivel</span><span class="sat-val">L2A (reflectancia)</span></div>
+      </div>
+      <div>
+        <p style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:20px">De las 13 bandas disponibles, el algoritmo AFAI necesita exactamente tres más la máscara de nubes:</p>
+        <div class="bands-list">
+          <div class="band-row">
+            <span class="band-chip">B04</span>
+            <span class="band-info">Rojo — absorción del sargazo</span>
+            <span class="band-nm">665 nm</span>
+          </div>
+          <div class="band-row">
+            <span class="band-chip">B8A</span>
+            <span class="band-info">NIR — alta reflectancia en algas</span>
+            <span class="band-nm">865 nm</span>
+          </div>
+          <div class="band-row">
+            <span class="band-chip">B11</span>
+            <span class="band-info">SWIR — distingue agua vs vegetación</span>
+            <span class="band-nm">1610 nm</span>
+          </div>
+          <div class="band-row" style="margin-top:8px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08)">
+            <span class="band-chip" style="color:rgba(255,255,255,0.4);border-color:rgba(255,255,255,0.1)">SCL</span>
+            <span class="band-info" style="color:rgba(255,255,255,0.4)">Máscara de nubes</span>
+            <span class="band-nm">20 m</span>
+          </div>
+        </div>
+        <div style="margin-top:24px;background:rgba(255,255,255,0.04);border-radius:10px;padding:16px;font-size:12px;color:rgba(255,255,255,0.4);font-family:'DM Mono',monospace;line-height:1.8">
+          .SAFE / GRANULE / L2A_* / IMG_DATA /<br>
+          &nbsp;&nbsp;<span style="color:var(--accent)">R20m/</span> ← aquí viven B04, B8A, B11, SCL
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 4 — AFAI -->
+  <div class="slide slide-4">
+    <div class="slide-label">03 — Algoritmo Principal</div>
+    <h2 class="slide-title">Índice AFAI</h2>
+    <div class="formula-card">
+      <div class="formula-tag">Wang &amp; Hu, 2009 — Remote Sensing of Environment</div>
+      <div class="formula-main">AFAI = B8A − B8A*</div>
+      <div class="formula-expand">B8A* = B04 + (B11 − B04) × (865 − 665) / (1610 − 665)</div>
+      <div class="formula-ref">B8A* = NIR esperado si sólo hubiera agua (interpolación lineal rojo→SWIR)</div>
+    </div>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">01</div>
+        <div class="step-title">Normalización</div>
+        <div class="step-desc">Valores crudos ÷ 10,000 → reflectancia [0,1]. Píxeles ≤0 marcados como NaN.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">02</div>
+        <div class="step-title">Cálculo AFAI</div>
+        <div class="step-desc">Operación píxel a píxel sobre arrays NumPy. AFAI positivo = posible sargazo.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">03</div>
+        <div class="step-title">Umbral Otsu</div>
+        <div class="step-desc">Análisis estadístico del histograma. Umbral óptimo calculado automáticamente.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5 — OTSU -->
+  <div class="slide slide-5">
+    <div class="slide-label" style="color:rgba(255,255,255,0.4)">04 — Innovación Metodológica</div>
+    <h2 class="slide-title" style="color:var(--white)">Umbral Adaptativo de Otsu</h2>
+    <div class="otsu-visual">
+      <div class="histogram-bars" id="histBars"></div>
+      <div class="histo-labels">
+        <span>AFAI bajo (agua)</span>
+        <span>↑ Umbral 0.1307</span>
+        <span>AFAI alto (sargazo)</span>
+      </div>
+    </div>
+    <div class="comparison-row">
+      <div class="comp-card bad">
+        <div class="comp-label">✗ Umbral Fijo (ingenuo)</div>
+        <div class="comp-text"><span class="mono">AFAI > 0.005 = sargazo</span><br><br>Falla en distintas imágenes. El valor óptimo cambia con la iluminación, estación del año y condiciones atmosféricas.</div>
+      </div>
+      <div class="comp-card good">
+        <div class="comp-label">✓ Otsu (implementado)</div>
+        <div class="comp-text"><span class="mono">threshold_otsu(afai)</span><br><br>Maximiza la varianza inter-clase estadísticamente. Funciona de forma óptima en cualquier imagen sin ajuste manual.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 6 — RESULTADOS -->
+  <div class="slide slide-6">
+    <div class="slide-label">05 — Resultados</div>
+    <h2 class="slide-title">11 de Mayo 2022 · Cancún, QRoo</h2>
+    <div class="result-hero">
+      <div class="res-metric">
+        <div class="res-num">738<span class="res-unit"> km²</span></div>
+        <div class="res-label">Sargazo detectado</div>
+      </div>
+      <div class="res-divider"></div>
+      <div class="res-metric">
+        <div class="res-num">0.1307</div>
+        <div class="res-label">Umbral Otsu calculado</div>
+      </div>
+      <div class="res-divider"></div>
+      <div class="res-metric">
+        <div class="res-num">13<span class="res-unit">%</span></div>
+        <div class="res-label">Cobertura de nubes</div>
+      </div>
+    </div>
+    <div class="detail-grid">
+      <div class="detail-card">
+        <div class="detail-key">Satélite</div>
+        <div class="detail-val">Sentinel-2B ESA</div>
+      </div>
+      <div class="detail-card">
+        <div class="detail-key">Resolución</div>
+        <div class="detail-val">20 m/píxel</div>
+      </div>
+      <div class="detail-card">
+        <div class="detail-key">Tamaño imagen</div>
+        <div class="detail-val">5,490 × 5,490 px</div>
+      </div>
+      <div class="detail-card">
+        <div class="detail-key">Área cubierta</div>
+        <div class="detail-val">110 × 110 km</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 7 — CÓDIGO -->
+  <div class="slide slide-7">
+    <div class="slide-label" style="color:rgba(255,255,255,0.4)">06 — Implementación</div>
+    <h2 class="slide-title" style="color:var(--white);margin-bottom:16px">Arquitectura del Código</h2>
+    <div class="code-tabs">
+      <button class="tab-btn active" onclick="showTab('afai')">afai.py</button>
+      <button class="tab-btn" onclick="showTab('loader')">loader.py</button>
+    </div>
+    <div class="code-block">
+      <div class="code-panel active" id="tab-afai">
+        <span class="kw">def</span> <span class="fn">calcular_afai</span>(<span class="var">B4</span>, <span class="var">B8A</span>, <span class="var">B11</span>):<br>
+        &nbsp;&nbsp;<span class="cm"># Longitudes de onda Sentinel-2 (nm)</span><br>
+        &nbsp;&nbsp;<span class="var">λ_red, λ_nir, λ_swir</span> = <span class="num">665</span>, <span class="num">865</span>, <span class="num">1610</span><br>
+        &nbsp;&nbsp;<span class="var">B8A_prima</span> = <span class="var">B4</span> + (<span class="var">B11</span> - <span class="var">B4</span>) * ((<span class="var">λ_nir</span> - <span class="var">λ_red</span>) / (<span class="var">λ_swir</span> - <span class="var">λ_red</span>))<br>
+        &nbsp;&nbsp;<span class="kw">return</span> <span class="var">B8A</span> - <span class="var">B8A_prima</span><br>
+        <br>
+        <span class="kw">def</span> <span class="fn">detectar_sargazo</span>(<span class="var">afai</span>):<br>
+        &nbsp;&nbsp;<span class="cm"># Umbral adaptativo — no fijo</span><br>
+        &nbsp;&nbsp;<span class="var">datos</span> = <span class="var">afai</span>[~<span class="fn">np.isnan</span>(<span class="var">afai</span>)]<br>
+        &nbsp;&nbsp;<span class="var">umbral</span> = <span class="fn">threshold_otsu</span>(<span class="var">datos</span>)<br>
+        &nbsp;&nbsp;<span class="kw">return</span> <span class="var">afai</span> > <span class="var">umbral</span>, <span class="var">umbral</span>
+      </div>
+      <div class="code-panel" id="tab-loader">
+        <span class="kw">def</span> <span class="fn">cargar_sentinel2</span>(<span class="var">carpeta_r20m</span>):<br>
+        &nbsp;&nbsp;<span class="cm"># Busca B04, B8A, B11, SCL automáticamente</span><br>
+        &nbsp;&nbsp;<span class="var">nombres</span> = {<span class="str">"B4"</span>: <span class="str">"B04"</span>, <span class="str">"B8A"</span>: <span class="str">"B8A"</span>, <span class="str">"B11"</span>: <span class="str">"B11"</span>}<br>
+        &nbsp;&nbsp;<span class="kw">for</span> <span class="var">clave, codigo</span> <span class="kw">in</span> <span class="var">nombres.items</span>():<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="var">archivos</span> = <span class="fn">list</span>(<span class="var">carpeta.glob</span>(<span class="str">f"*_{codigo}_20m.jp2"</span>))<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="var">array</span>, <span class="var">meta</span> = <span class="fn">cargar_banda</span>(<span class="var">archivos</span>[<span class="num">0</span>])<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="var">bandas</span>[<span class="var">clave</span>] = <span class="var">array</span> / <span class="num">10_000.0</span>  <span class="cm"># normalizar</span><br>
+        &nbsp;&nbsp;<span class="kw">return</span> <span class="var">bandas</span>
+      </div>
+    </div>
+    <div class="arch-grid">
+      <div class="arch-file">
+        <div class="arch-name">src/loader.py</div>
+        <div class="arch-desc">Lee .jp2, normaliza bandas, maneja rutas .SAFE</div>
+      </div>
+      <div class="arch-file">
+        <div class="arch-name">src/afai.py</div>
+        <div class="arch-desc">AFAI, Otsu, cálculo de área en km²</div>
+      </div>
+      <div class="arch-file">
+        <div class="arch-name">app.py</div>
+        <div class="arch-desc">Web app Streamlit — interfaz del detector</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 8 — FLUJO -->
+  <div class="slide slide-8">
+    <div class="slide-label">07 — Flujo del Sistema</div>
+    <h2 class="slide-title">De píxel a kilómetro cuadrado</h2>
+    <div class="flow-steps">
+      <div class="flow-step">
+        <div class="flow-icon">🛰</div>
+        <div class="flow-step-title">Descarga</div>
+        <div class="flow-step-sub">Copernicus Data Space<br>Sentinel-2 L2A .SAFE</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-icon">📂</div>
+        <div class="flow-step-title">Carga</div>
+        <div class="flow-step-sub">loader.py lee<br>B04, B8A, B11</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-icon">÷</div>
+        <div class="flow-step-title">Normalización</div>
+        <div class="flow-step-sub">÷ 10,000<br>→ reflectancia [0,1]</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-icon">📐</div>
+        <div class="flow-step-title">AFAI</div>
+        <div class="flow-step-sub">afai.py aplica<br>fórmula Wang & Hu</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-icon">📊</div>
+        <div class="flow-step-title">Otsu</div>
+        <div class="flow-step-sub">Umbral óptimo<br>automático</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-icon">🗺</div>
+        <div class="flow-step-title">Mapa</div>
+        <div class="flow-step-sub">738 km²<br>detectados</div>
+      </div>
+    </div>
+    <div class="validation-box">
+      <div>
+        <div class="val-label">Validación</div>
+        <div class="val-text">Mayo–agosto 2022 fue año de arribo masivo documentado en Quintana Roo. La detección de 738 km² coincide con los registros históricos de CONACYT y reportes de la UNAM UMDI Sisal.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 9 — CONCLUSIÓN -->
+  <div class="slide slide-9">
+    <div class="slide-label" style="color:rgba(255,255,255,0.4)">08 — Conclusiones y Trabajo Futuro</div>
+    <h2 class="slide-title" style="color:var(--white)">Lo que se logró</h2>
+    <div class="concl-grid">
+      <div class="concl-card">
+        <span class="concl-icon">🎯</span>
+        <div class="concl-title">Detección funcional</div>
+        <div class="concl-text">Implementación completa de AFAI sobre datos reales Sentinel-2. Detección de 738 km² de sargazo en la costa de Cancún con umbral Otsu adaptativo.</div>
+      </div>
+      <div class="concl-card">
+        <span class="concl-icon">🏗</span>
+        <div class="concl-title">Código modular</div>
+        <div class="concl-text">Arquitectura profesional con módulos separados, documentación, control de versiones en GitHub y entorno reproducible con conda.</div>
+      </div>
+      <div class="concl-card">
+        <span class="concl-icon">📡</span>
+        <div class="concl-title">Datos reales</div>
+        <div class="concl-text">No es una simulación — son imágenes oficiales de la ESA descargadas directamente de Copernicus Data Space sobre la zona de interés.</div>
+      </div>
+      <div class="concl-card">
+        <span class="concl-icon">📖</span>
+        <div class="concl-title">Base científica</div>
+        <div class="concl-text">El índice AFAI está publicado en Remote Sensing of Environment (Wang & Hu, 2009). El método de Otsu garantiza robustez estadística.</div>
+      </div>
+    </div>
+    <div class="next-steps">
+      <div class="next-title">Siguientes pasos</div>
+      <div class="next-items">
+        <div class="next-item"><div class="next-dot"></div>Mapa interactivo Folium georreferenciado</div>
+        <div class="next-item"><div class="next-dot"></div>App web Streamlit para demo en vivo</div>
+        <div class="next-item"><div class="next-dot"></div>Análisis temporal 2018–2024</div>
+        <div class="next-item"><div class="next-dot"></div>Deep learning con U-Net (sem. 5–6)</div>
+        <div class="next-item"><div class="next-dot"></div>Colaboración CINVESTAV / UNAM Sisal</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- CONTROLES -->
+<div class="controls">
+  <button class="btn" id="prevBtn" onclick="changeSlide(-1)" disabled>← Anterior</button>
+  <div class="progress-dots" id="dots"></div>
+  <span class="slide-counter" id="counter">1 / 9</span>
+  <button class="btn" id="nextBtn" onclick="changeSlide(1)">Siguiente →</button>
+</div>
+
+<script>
+  let current = 0;
+  const total = 9;
+  const slides = document.querySelectorAll('.slide');
+  const dotsContainer = document.getElementById('dots');
+  const counter = document.getElementById('counter');
+  const slideNum = document.getElementById('slideNum');
+
+  // Dots
+  for (let i = 0; i < total; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => goTo(i);
+    dotsContainer.appendChild(d);
+  }
+
+  function goTo(n) {
+    slides[current].classList.remove('active');
+    slides[current].classList.add('exit');
+    setTimeout(() => slides[current].classList.remove('exit'), 500);
+    current = n;
+    slides[current].classList.add('active');
+    document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === current));
+    counter.textContent = `${current + 1} / ${total}`;
+    slideNum.textContent = `${String(current + 1).padStart(2, '0')} / ${String(total).padStart(2, '0')}`;
+    document.getElementById('prevBtn').disabled = current === 0;
+    document.getElementById('nextBtn').disabled = current === total - 1;
+  }
+
+  function changeSlide(dir) {
+    const n = current + dir;
+    if (n >= 0 && n < total) goTo(n);
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') changeSlide(1);
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') changeSlide(-1);
+  });
+
+  // Cursor
+  const cursor = document.getElementById('cursor');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX - 5 + 'px';
+    cursor.style.top = e.clientY - 5 + 'px';
+  });
+
+  // Tabs
+  function showTab(name) {
+    document.querySelectorAll('.code-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  // Histograma visual
+  const hist = document.getElementById('histBars');
+  if (hist) {
+    const waterVals = [2,4,8,18,35,55,72,88,95,90,78,60,40,22,12,6,3];
+    const sargVals  = [0,0,0,0,0,0,0,0,2,6,14,28,48,70,85,90,80];
+    const mid = 10;
+    for (let i = 0; i < 32; i++) {
+      const bar = document.createElement('div');
+      bar.className = 'bar ' + (i < mid ? 'water' : i === mid ? 'mid' : 'sarg');
+      const h = i < waterVals.length ? waterVals[i] : (i - waterVals.length < sargVals.length ? sargVals[i - waterVals.length + mid] : 10);
+      bar.style.height = Math.min(h, 100) + '%';
+      hist.appendChild(bar);
+    }
+    const line = document.createElement('div');
+    line.className = 'threshold-line';
+    hist.appendChild(line);
+  }
+</script>
+</body>
+</html>
