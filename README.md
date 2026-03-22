@@ -47,7 +47,7 @@ Hay tres cosas que limitan esta comparación y que vale la pena mencionar sin es
 Cuatro días de diferencia, el reporte es del 7 de mayo, la imagen del 11. El sargazo puede recorrer bastante distancia en ese tiempo.
 Unidades distintas. Nosotros medimos km² en el mar, los reportes cuentan playas, no superficie, no son equivalentes directos.
 13% de nubes los píxeles bajo nubes son ciegos para el satélite, el área real detectada probablemente es mayor.
-->El siguiente paso lógico sería contactar a la UNAM UMDI Sisal — están en Yucatán y tienen datos de campo reales con coordenadas. Con eso sí podríamos calcular métricas de precisión formales
+->El siguiente paso lógico sería contactar a la UNAM UMDI Sisal — están en Yucatán y tienen datos de campo reales con coordenadas, con eso sí podríamos calcular métricas de precisión formales.
 
 ## Stack
 
