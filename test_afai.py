@@ -1,40 +1,57 @@
-from src.loader import cargar_sentinel2
-from src.afai import calcular_afai, detectar_sargazo, calcular_area_km2
-import matplotlib.pyplot as plt
-import numpy as np
+"""
+test_afai.py — Detección completa de sargazo con filtro SCL
+Ejecutar: python test_afai.py
+"""
+from src.loader    import cargar_sentinel2
+from src.afai      import (calcular_afai, aplicar_mascara_agua,
+                            aplicar_mascara_nubes, detectar_sargazo,
+                            resumen_deteccion)
+from src.visualize import mapa_afai, mapa_comparacion
+from src.utils     import imprimir_resumen
 
 RUTA_R20M = (
     r"C:\Users\adria\Desktop\Sargazo_Project\data\raw"
     r"\S2B_MSIL2A_20220511T160829_N0510_R140_T16QEJ_20240611T002406.SAFE"
     r"\GRANULE\L2A_T16QEJ_A027050_20220511T162216\IMG_DATA\R20m"
 )
+FECHA = "2022-05-11"
 
-print("Cargando bandas...")
+print("=" * 48)
+print("  SARGAZO DETECTOR v1.0")
+print("  Alexander Gallegos — UADY FC 2026")
+print("=" * 48)
+
+# 1. Cargar bandas
+print("\n[1/5] Cargando bandas Sentinel-2...")
 bandas = cargar_sentinel2(RUTA_R20M)
 
-print("Calculando AFAI...")
-afai = calcular_afai(bandas["B4"], bandas["B8A"], bandas["B11"])
+# 2. Calcular AFAI
+print("\n[2/5] Calculando índice AFAI...")
+afai_raw = calcular_afai(bandas["B4"], bandas["B8A"], bandas["B11"])
 
-print("Detectando sargazo con umbral Otsu...")
-mascara, umbral = detectar_sargazo(afai)
-area = calcular_area_km2(mascara)
+# 3. Aplicar filtros SCL (agua + nubes)
+print("\n[3/5] Aplicando filtros SCL...")
+afai_agua   = aplicar_mascara_agua(afai_raw, bandas["SCL"])
+afai_limpio = aplicar_mascara_nubes(afai_agua, bandas["SCL"])
+print("  ✓ Tierra y vegetación eliminadas")
+print("  ✓ Nubes y sombras eliminadas")
 
-print(f"\n  Umbral Otsu encontrado: {umbral:.6f}")
-print(f"  Área de sargazo detectada: {area:.2f} km²")
+# 4. Detectar sargazo con Otsu
+print("\n[4/5] Detectando sargazo con umbral Otsu...")
+mascara, umbral = detectar_sargazo(afai_limpio, percentil=95.0)
+info = resumen_deteccion(afai_limpio, mascara, umbral)
+imprimir_resumen(info, FECHA)
 
-print("\nGenerando mapa...")
-fig, axes = plt.subplots(1, 2, figsize=(14, 6))
-
-axes[0].imshow(afai, cmap="RdYlGn", vmin=-0.05, vmax=0.05)
-axes[0].set_title("Índice AFAI — 11 Mayo 2022")
-axes[0].axis("off")
-plt.colorbar(axes[0].images[0], ax=axes[0], label="AFAI")
-
-axes[1].imshow(mascara, cmap="YlOrRd")
-axes[1].set_title(f"Sargazo detectado — {area:.1f} km²")
-axes[1].axis("off")
-
-plt.tight_layout()
-plt.savefig("data/results/afai_20220511.png", dpi=150, bbox_inches="tight")
-print("  Mapa guardado en data/results/afai_20220511.png")
-plt.show()
+# 5. Visualizar
+print("[5/5] Generando mapas...")
+mapa_comparacion(
+    afai_raw, afai_limpio,
+    fecha=FECHA,
+    guardar_en="data/results/comparacion_scl.png"
+)
+mapa_afai(
+    afai_limpio, mascara,
+    area_km2=info["area_km2"],
+    fecha=FECHA,
+    guardar_en="data/results/sargazo_20220511.png"
+)
