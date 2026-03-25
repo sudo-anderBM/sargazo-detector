@@ -1,103 +1,123 @@
 # 🌊 Detección de Sargazo con Sentinel-2 y AFAI
 
-Sistema completo de detección automática de sargazo en imágenes Sentinel-2 usando el índice AFAI (Algal Floating Algae Index).
+Detector de sargazo frente a las costas de Quintana Roo usando imágenes Sentinel-2 y el índice AFAI. 
 
+La idea es simple: procesar datos públicos de satélite para detectar sargazo flotante. La CONABIO-SIMAR hace algo parecido pero con MODIS (1 km de resolución). Nosotros usamos Sentinel-2 (20 m de resolución), así que ves el doble de detalle... y los datos también son gratis.
 
-
-La CONABIO-SIMAR — la institución que monitorea el sargazo en México — también usa el índice AFAI. La diferencia es que ellos trabajan con MODIS a 1 km de resolución. Nosotros usamos Sentinel-2 a 20 m. Cincuenta veces más detalle, con datos igualmente gratuitos.
----
-
-El proyecto implementa el índice AFAI sobre imágenes reales de la ESA para
-detectar manchas de sargazo flotante en el Caribe mexicano. El 11 de mayo
-de 2022 se detectaron **413.8 km²** frente a las costas de Quintana Roo.
+El 11 de mayo de 2022, el sistema detectó **413.8 km²** de sargazo frente a Cozumel. Aquí está:
 
 ![Detección](evidencias/sargazo_20220511.png)
 
-![Comparación SCL](evidencias/comparacion_scl.png)
+## 🚀 Empezar
 
-
-## 🚀 Inicio Rápido
-
-### 1. Instalar dependencias
+### Instalación rápida
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Ejecutar pipeline
+### Procesar una imagen
 ```bash
 python -m src.pipeline
 ```
 
-## 📊 Resultados
+Eso es. La imagen se procesa, detecta sargazo, y guarda los resultados en JSON.
 
-El pipeline genera:
-- **Área de sargazo detectada** (km²)
-- **Porcentaje de cobertura** sobre agua
-- **Estadísticas del índice AFAI**
-- **Archivo JSON** con historial en `data/history/`
+## 📊 Qué genera
 
-### Ejemplo de salida:
+El pipeline hace lo siguiente:
+
+- Calcula el índice AFAI (Algal Floating Algae Index)
+- Aplica filtros para eliminar nubes y tierra
+- Detecta dónde está el sargazo
+- Te dice cuántos km² hay y qué cobertura es
+
+Ejemplo de lo que sale:
+
 ```
-============================================================
-           DETECCIÓN DE SARGAZO COMPLETADA
+DETECCIÓN DE SARGAZO COMPLETADA
 ============================================================
 Fecha de imagen:     2022-05-11
-Fecha de ejecución:  2026-03-24 18:40:10
 Área de sargazo:     413.82 km²
-Píxeles sargazo:     1,034,545
-Píxeles agua total:  20,693,720
 Cobertura:           5.00%
 Umbral Otsu:         0.008044
 AFAI (min/max):      -0.2274 / 0.4486
-AFAI promedio:       -0.001259
 ============================================================
 ```
 
-## 🏗️ Arquitectura
+## 🏗️ Cómo está armado
 
 ```
 src/
-├── __init__.py      # Paquete Python
-├── loader.py        # Carga de bandas Sentinel-2
-├── afai.py          # Algoritmos AFAI y detección
-├── utils.py         # Utilidades
-├── visualize.py     # Visualización (opcional)
-└── pipeline.py      # Pipeline principal
+├── loader.py        # Lee las bandas Sentinel-2
+├── afai.py          # Calcula AFAI y detecta sargazo
+├── visualize.py     # Genera los mapas
+├── utils.py         # Cosas útiles sin categoría
+└── pipeline.py      # Orquesta todo
 ```
 
-## 🔧 Uso Avanzado
+## 🎯 Usando el generador de dataset
 
-### Ejecutar con parámetros personalizados
+Si tienes varias imágenes para procesar:
+
+```bash
+python scripts/generar_dataset.py
+```
+
+Detecta automáticamente todas las imágenes en `data/raw/`, las procesa, y guarda los resultados organizados por fecha en `data/dataset/`. También puedes hacer cosas como:
+
+```bash
+# Reprocesar imágenes ya procesadas
+python scripts/generar_dataset.py --forzar
+
+# Cambiar el percentil
+python scripts/generar_dataset.py --percentil 90
+
+# Generar visualizaciones (más lento)
+python scripts/generar_dataset.py --generar-imagenes
+```
+
+Ver `scripts/README_generar_dataset.md` para más detalles.
+
+## 📁 Estructura
+
+```
+data/
+├── raw/           # Imágenes Sentinel-2 sin procesar
+└── dataset/       # Resultados procesados por fecha
+     ├── 2022-05-11/
+     │   └── resultados.json
+     └── 2022-05-12/
+         └── resultados.json
+```
+
+## 📋 Qué necesitas
+
+- Python 3.8+
+- Una imagen Sentinel-2 Level-2A (gratis desde Copernicus)
+- Las bandas: B4, B8A, B11 y SCL
+
+## 🔧 Personalizar
+
+Si queres ejecutar el pipeline programáticamente:
+
 ```python
 from src.pipeline import ejecutar_pipeline
 
 resultado = ejecutar_pipeline(
     ruta_r20m="ruta/a/carpeta/R20m",
-    percentil=95.0,      # Percentil para Otsu
-    guardar_json=True    # Guardar en data/history/
+    percentil=95.0,
+    guardar_json=True
 )
+
+# 'resultado' es un dict con toda la info
+print(resultado['deteccion']['area_km2'])  # 413.82
 ```
 
-### Ejecutar módulo directamente
-```bash
-python -m src.pipeline
-```
+## 📚 Referencias
 
-## 📋 Requisitos
-
-- Python 3.8+
-- Datos Sentinel-2 Level-2A (.SAFE)
-- Bandas: B4 (665nm), B8A (865nm), B11 (1610nm), SCL
-
-## 📁 Estructura de datos
-
-```
-data/
-├── raw/           # Imágenes Sentinel-2 .SAFE
-└── history/       # Resultados JSON por fecha
-```
-├── afai.py        # Cálculo AFAI y detección
-├── utils.py       # Utilidades
+- **AFAI**: Wang & Hu (2009) - Índice para detectar algas flotantes
+- **Sentinel-2**: ESA - Misión Copernicus (datos públicos)
+- **CONABIO-SIMAR**: Monitoreo oficial del sargazo en México
 └── pipeline.py    # Pipeline completo
 ```
 
