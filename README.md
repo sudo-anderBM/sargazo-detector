@@ -2,6 +2,20 @@
 
 Sistema completo de detección automática de sargazo en imágenes Sentinel-2 usando el índice AFAI (Algal Floating Algae Index).
 
+
+
+La CONABIO-SIMAR — la institución que monitorea el sargazo en México — también usa el índice AFAI. La diferencia es que ellos trabajan con MODIS a 1 km de resolución. Nosotros usamos Sentinel-2 a 20 m. Cincuenta veces más detalle, con datos igualmente gratuitos.
+---
+
+El proyecto implementa el índice AFAI sobre imágenes reales de la ESA para
+detectar manchas de sargazo flotante en el Caribe mexicano. El 11 de mayo
+de 2022 se detectaron **413.8 km²** frente a las costas de Quintana Roo.
+
+![Detección](evidencias/sargazo_20220511.png)
+
+![Comparación SCL](evidencias/comparacion_scl.png)
+
+
 ## 🚀 Inicio Rápido
 
 ### 1. Instalar dependencias
