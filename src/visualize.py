@@ -1,11 +1,163 @@
 """
-visualize.py — Visualización de resultados AFAI
-Autor: Alexander Gallegos — UADY FC 2026
+visualize.py - Visualizacion profesional de resultados AFAI
+Autor: Alexander Gallegos - UADY FC 2026
+
+Mejoras implementadas:
+- Colormaps cientificos (viridis, plasma) para mejor percepcion
+- Normalizacion automatica basada en percentiles
+- Overlay semi-transparente para mascara de sargazo
+- Tema profesional con mejor contraste
+- Informacion detallada en titulos y leyendas
 """
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from pathlib import Path
+import scipy.ndimage as ndi
+
+
+def mapa_afai_profesional(afai: np.ndarray,
+                         mascara: np.ndarray,
+                         area_km2: float,
+                         fecha: str = "2022-05-11",
+                         guardar_en: str = None) -> None:
+    """
+    Mapa profesional mejorado para deteccion de sargazo.
+
+    MEJORAS CLAVE:
+    - Normalizacion centrada en 0 (mejor interpretacion cientifica)
+    - Mejor contraste visual (TwoSlopeNorm)
+    - Overlay mas claro con borde blanco
+    - Eliminacion visual de ruido (NaN)
+    - Clasificacion de nivel (BAJO/MEDIO/ALTO)
+
+    Args:
+        afai: Array AFAI (con NaN en zonas no validas)
+        mascara: Mascara booleana de sargazo
+        area_km2: Area detectada
+        fecha: Fecha de la imagen
+        guardar_en: Ruta de guardado (opcional)
+    """
+
+    # ---------------------------
+    # CONFIGURACIÓN VISUAL
+    # ---------------------------
+    plt.style.use('dark_background')
+    fig, ax = plt.subplots(figsize=(12, 10))
+    fig.patch.set_facecolor('#1a1a1a')
+
+    # ---------------------------
+    # NORMALIZACIÓN INTELIGENTE
+    # ---------------------------
+    afai_valid = afai[~np.isnan(afai)]
+
+    if len(afai_valid) > 0:
+        vmin = np.percentile(afai_valid, 2)
+        vmax = np.percentile(afai_valid, 98)
+        if vmax - vmin < 1e-3:
+            vmin, vmax = -0.05, 0.05
+    else:
+        vmin, vmax = -0.05, 0.05
+
+    # Normalizacion centrada en 0 (CLAVE para interpretacion)
+    norm = mcolors.TwoSlopeNorm(vmin=vmin, vcenter=0, vmax=vmax)
+
+    # ---------------------------
+    # COLORMAP PROFESIONAL
+    # ---------------------------
+    cmap = plt.cm.coolwarm.copy()
+    cmap.set_bad(color='#111111')  # zonas NaN oscuras
+
+    im = ax.imshow(afai, cmap=cmap, norm=norm, alpha=0.85)
+
+    # ---------------------------
+    # OVERLAY DE SARGAZO MEJORADO
+    # ---------------------------
+    mascara_rgba = np.zeros((*mascara.shape, 4))
+
+    # Rojo fuerte para sargazo
+    mascara_rgba[mascara] = [1, 0, 0, 0.85]
+
+    # Borde blanco para definición (MUY IMPORTANTE visualmente)
+    borde = ndi.binary_dilation(mascara) ^ mascara
+    mascara_rgba[borde] = [1, 1, 1, 1]
+
+    ax.imshow(mascara_rgba, interpolation='nearest')
+
+    ax.axis('off')
+
+    # ---------------------------
+    # COLORBAR
+    # ---------------------------
+    cbar = plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+    cbar.set_label('Indice AFAI', fontsize=12, fontweight='bold')
+
+    # ---------------------------
+    # CLASIFICACION DE RIESGO
+    # ---------------------------
+    if area_km2 > 300:
+        nivel = "ALTO"
+        color_nivel = "red"
+    elif area_km2 > 100:
+        nivel = "MEDIO"
+        color_nivel = "orange"
+    else:
+        nivel = "BAJO"
+        color_nivel = "green"
+
+    # ---------------------------
+    # TÍTULOS
+    # ---------------------------
+    ax.set_title(f"DETECCION DE SARGAZO - {fecha}",
+                 fontsize=16, fontweight='bold')
+
+    ax.text(0.5, 0.02,
+            f"Area: {area_km2:.1f} km² | Rango AFAI: [{vmin:.3f}, {vmax:.3f}]",
+            transform=ax.transAxes,
+            ha='center',
+            fontsize=11,
+            style='italic')
+
+    # ---------------------------
+    # INFO TÉCNICA
+    # ---------------------------
+    info = """AFAI (Wang & Hu, 2009)
+Sentinel-2 | 20m
+Umbral: percentil 95"""
+
+    ax.text(0.02, 0.98, info,
+            transform=ax.transAxes,
+            fontsize=9,
+            verticalalignment='top',
+            bbox=dict(boxstyle="round",
+                      facecolor="#2a2a2a",
+                      alpha=0.8))
+
+    # ---------------------------
+    # NIVEL DE ALERTA (PRODUCTO REAL)
+    # ---------------------------
+    ax.text(0.98, 0.02,
+            f"NIVEL: {nivel}",
+            transform=ax.transAxes,
+            ha='right',
+            fontsize=12,
+            color='white',
+            bbox=dict(facecolor=color_nivel, alpha=0.9))
+
+    plt.tight_layout()
+
+    # ---------------------------
+    # GUARDADO
+    # ---------------------------
+    if guardar_en:
+        Path(guardar_en).parent.mkdir(parents=True, exist_ok=True)
+        plt.savefig(guardar_en,
+                    dpi=400,
+                    bbox_inches='tight',
+                    facecolor=fig.get_facecolor())
+        print(f"[OK] Mapa guardado en: {guardar_en}")
+
+    plt.show()
 
 
 def mapa_afai(afai: np.ndarray,
@@ -14,80 +166,83 @@ def mapa_afai(afai: np.ndarray,
               fecha: str = "2022-05-11",
               guardar_en: str = None) -> None:
     """
-    Genera figura con dos paneles:
-      - Izquierda: mapa de calor AFAI continuo
-      - Derecha:   máscara binaria de sargazo detectado
-
-    Args:
-        afai:      Array AFAI filtrado (con NaN en no-agua)
-        mascara:   Array booleano de sargazo
-        area_km2:  Área detectada en km²
-        fecha:     Fecha de la imagen para el título
-        guardar_en: Ruta donde guardar el PNG (None = solo mostrar)
+    Función original mejorada - mantiene compatibilidad con pipeline existente.
+    Ahora usa mapa_afai_profesional() internamente.
     """
-    fig, axes = plt.subplots(1, 2, figsize=(15, 7))
-    fig.patch.set_facecolor("#0d1b2a")
+    mapa_afai_profesional(afai, mascara, area_km2, fecha, guardar_en)
 
-    for ax in axes:
-        ax.set_facecolor("#0d1b2a")
-        ax.axis("off")
 
-    # Panel 1 — Índice AFAI continuo
-    im = axes[0].imshow(
-        afai,
-        cmap="RdYlGn",
-        vmin=-0.05,
-        vmax=0.05,
-        interpolation="nearest"
-    )
-    axes[0].set_title(
-        f"Índice AFAI — {fecha}",
-        color="white", fontsize=14, pad=12, fontweight="bold"
-    )
-    cbar = plt.colorbar(im, ax=axes[0], fraction=0.046, pad=0.04)
-    cbar.set_label("AFAI", color="white", fontsize=11)
-    cbar.ax.yaxis.set_tick_params(color="white")
-    plt.setp(cbar.ax.yaxis.get_ticklabels(), color="white", fontsize=9)
+def mapa_comparacion_mejorado(afai_sin_filtro: np.ndarray,
+                             afai_filtrado: np.ndarray,
+                             fecha: str = "2022-05-11",
+                             guardar_en: str = None) -> None:
+    """
+    Comparacion profesional: AFAI sin filtro vs con filtro SCL.
 
-    # Panel 2 — Máscara binaria
-    cmap_sarg = mcolors.ListedColormap(["#0a2540", "#c0392b"])
-    axes[1].imshow(
-        mascara.astype(np.uint8),
-        cmap=cmap_sarg,
-        vmin=0, vmax=1,
-        interpolation="nearest"
-    )
-    axes[1].set_title(
-        f"Sargazo detectado — {area_km2:.1f} km²",
-        color="white", fontsize=14, pad=12, fontweight="bold"
-    )
+    Mejoras:
+    - Colormap plasma para mejor contraste
+    - Normalizacion automatica por percentiles
+    - Informacion detallada sobre el efecto del filtro
+    """
+    plt.style.use('dark_background')
+    fig, axes = plt.subplots(1, 2, figsize=(16, 8))
+    fig.patch.set_facecolor('#1a1a1a')
 
-    # Leyenda manual panel 2
-    from matplotlib.patches import Patch
-    leyenda = [
-        Patch(color="#0a2540", label="Océano / sin dato"),
-        Patch(color="#c0392b", label=f"Sargazo ({area_km2:.1f} km²)"),
+    titulos = [
+        "AFAI sin filtro SCL\n(incluye tierra, vegetacion y nubes)",
+        "AFAI con filtro SCL\n(solo pixeles de agua)"
     ]
-    axes[1].legend(
-        handles=leyenda,
-        loc="lower right",
-        fontsize=10,
-        framealpha=0.6,
-        facecolor="#0d1b2a",
-        labelcolor="white"
-    )
+    datos = [afai_sin_filtro, afai_filtrado]
 
-    plt.suptitle(
-        "Detección de Sargazo — Costa de Quintana Roo, México",
-        color="white", fontsize=16, fontweight="bold", y=1.01
-    )
+    # Calcular estadísticas para cada panel
+    stats = []
+    for dato in datos:
+        dato_valid = dato[~np.isnan(dato)]
+        if len(dato_valid) > 0:
+            vmin = np.percentile(dato_valid, 1)
+            vmax = np.percentile(dato_valid, 99)
+            media = np.mean(dato_valid)
+            stats.append((vmin, vmax, media))
+        else:
+            stats.append((-0.05, 0.05, 0.0))
+
+    for ax, dato, titulo, (vmin, vmax, media) in zip(axes, datos, titulos, stats):
+        ax.set_facecolor('#1a1a1a')
+        ax.axis('off')
+
+        # Usar colormap plasma para mejor percepción de diferencias
+        im = ax.imshow(dato, cmap='plasma', vmin=vmin, vmax=vmax,
+                       interpolation='bilinear', alpha=0.9)
+
+        ax.set_title(titulo, fontsize=13, fontweight='bold', pad=15)
+
+        # Barra de color
+        cbar = plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04, shrink=0.8)
+        cbar.set_label('AFAI', fontsize=10, labelpad=5)
+        cbar.ax.tick_params(labelsize=9)
+
+        # Información estadística
+        info_stats = f'Promedio: {media:.4f}\nRango: [{vmin:.3f}, {vmax:.3f}]'
+        ax.text(0.02, 0.02, info_stats, transform=ax.transAxes,
+                fontsize=9, color='white', alpha=0.9,
+                bbox=dict(boxstyle="round,pad=0.2", facecolor="#333333", alpha=0.8))
+
+    plt.suptitle(f'Efecto del Filtro SCL en AFAI - {fecha}',
+                 fontsize=16, fontweight='bold', y=0.98)
+
+    # Información adicional
+    explicacion = """El filtro SCL elimina pixeles de tierra, vegetacion y nubes,
+dejando solo el agua para analisis preciso de sargazo."""
+    fig.text(0.5, 0.02, explicacion, ha='center', fontsize=10,
+             style='italic', alpha=0.8)
+
     plt.tight_layout()
 
     if guardar_en:
         Path(guardar_en).parent.mkdir(parents=True, exist_ok=True)
-        plt.savefig(guardar_en, dpi=150, bbox_inches="tight",
-                    facecolor=fig.get_facecolor())
-        print(f"  ✓ Mapa guardado en: {guardar_en}")
+        plt.savefig(guardar_en, dpi=300, bbox_inches='tight',
+                    facecolor=fig.get_facecolor(), edgecolor='none')
+        print(f'  [OK] Comparación mejorada guardada en: {guardar_en}')
 
     plt.show()
 
@@ -97,34 +252,46 @@ def mapa_comparacion(afai_sin_filtro: np.ndarray,
                       fecha: str = "2022-05-11",
                       guardar_en: str = None) -> None:
     """
-    Comparación visual: AFAI sin filtro SCL vs con filtro SCL.
-    Útil para demostrar el valor del filtrado de tierra/nubes.
+    Función original - mantiene compatibilidad.
+    Ahora usa mapa_comparacion_mejorado() internamente.
     """
-    fig, axes = plt.subplots(1, 2, figsize=(15, 7))
-    fig.patch.set_facecolor("#0d1b2a")
+    mapa_comparacion_mejorado(afai_sin_filtro, afai_filtrado, fecha, guardar_en)
 
-    titulos = [
-        "Sin filtro SCL\n(incluye tierra y vegetación)",
-        "Con filtro SCL\n(solo píxeles de agua)",
-    ]
-    datos = [afai_sin_filtro, afai_filtrado]
 
-    for ax, dato, titulo in zip(axes, datos, titulos):
-        ax.set_facecolor("#0d1b2a")
-        ax.axis("off")
-        im = ax.imshow(dato, cmap="RdYlGn", vmin=-0.05, vmax=0.05)
-        ax.set_title(titulo, color="white", fontsize=13, pad=12)
-        plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04).ax.yaxis.set_tick_params(color="white")
+def crear_visualizacion_completa(afai_sin_filtro: np.ndarray,
+                                 afai_filtrado: np.ndarray,
+                                 mascara: np.ndarray,
+                                 area_km2: float,
+                                 fecha: str = "2022-05-11",
+                                 directorio_salida: str = "resultados") -> None:
+    """
+    Genera suite completa de visualizaciones profesionales.
 
-    plt.suptitle(
-        f"Efecto del filtro SCL — {fecha}",
-        color="white", fontsize=15, fontweight="bold"
-    )
-    plt.tight_layout()
+    Crea:
+    1. Mapa de detección final (AFAI + overlay de sargazo)
+    2. Comparación antes/después del filtro SCL
+    3. Guarda todo en directorio organizado
 
-    if guardar_en:
-        plt.savefig(guardar_en, dpi=150, bbox_inches="tight",
-                    facecolor=fig.get_facecolor())
-        print(f"  ✓ Comparación guardada en: {guardar_en}")
+    Args:
+        afai_sin_filtro: AFAI antes del filtro SCL
+        afai_filtrado: AFAI después del filtro SCL
+        mascara: Máscara binaria de sargazo detectado
+        area_km2: Área de sargazo en km²
+        fecha: Fecha de la imagen
+        directorio_salida: Directorio donde guardar imágenes
+    """
+    Path(directorio_salida).mkdir(parents=True, exist_ok=True)
 
-    plt.show()
+    # 1. Mapa de detección final
+    ruta_deteccion = f"{directorio_salida}/deteccion_sargazo_{fecha}.png"
+    mapa_afai_profesional(afai_filtrado, mascara, area_km2, fecha, ruta_deteccion)
+
+    # 2. Comparación de filtros
+    ruta_comparacion = f"{directorio_salida}/comparacion_filtros_{fecha}.png"
+    mapa_comparacion_mejorado(afai_sin_filtro, afai_filtrado, fecha, ruta_comparacion)
+
+    print(f"\n=== VISUALIZACIONES COMPLETAS GENERADAS ===")
+    print(f"📊 Detección final: {ruta_deteccion}")
+    print(f"🔍 Comparación filtros: {ruta_comparacion}")
+    print(f"📁 Directorio: {directorio_salida}")
+    print("=" * 50)

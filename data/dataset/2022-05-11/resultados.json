@@ -1,0 +1,21 @@
+{
+  "metadata": {
+    "fecha_ejecucion": "2026-03-24T22:31:10.124585",
+    "fecha_imagen": "2022-05-11",
+    "ruta_procesada": "data\\raw\\S2B_MSIL2A_20220511T160829_N0510_R140_T16QEJ_20240611T002406.SAFE\\GRANULE\\L2A_T16QEJ_A027050_20220511T162216\\IMG_DATA\\R20m",
+    "percentil_usado": 95.0,
+    "generar_imagenes": false
+  },
+  "deteccion": {
+    "area_km2": 413.82,
+    "pixeles_sargazo": 1034545,
+    "pixeles_agua_total": 20693720,
+    "cobertura_porcentaje": 5.0,
+    "umbral_otsu": 0.008044
+  },
+  "estadisticas_afai": {
+    "min": -0.22736,
+    "max": 0.448627,
+    "media": -0.001259
+  }
+}
